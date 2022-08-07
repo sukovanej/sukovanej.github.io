@@ -14,7 +14,7 @@
 
 </div>
 <h1>Python's asyncio as Monads</h1>
-<p>I assume Python's asyncio is monadic the same way Javascript's Promise is. My original motivation was to check what would happen if any of the monad law didn't hold for it. Unfortunately, it turns out these three laws feel so fundamental that I couldn't really think of a way to hypothetically break them. So instead, I'll just show a working example of formulation of these laws in Python for asyncio along with usual representation of <code>IO</code>.</p>
+<p>I assume Python's asyncio is monadic the same way Javascript's Promise is. My original motivation was to check what would happen if any of the monad laws didn't hold for it. Unfortunately, it turns out these three laws feel so fundamental that I couldn't really think of a way to hypothetically break them. So instead, I'll just show a working example of formulation of these laws in Python for asyncio along with usual representation of <code>IO</code>.</p>
 <h2>Monad laws</h2>
 <p>Let's summarise monad laws using Haskell pseudo code (taken from the <a href="https://wiki.haskell.org/Monad_laws.html">haskell wiki</a>). Think of <code>a</code> being a pure value (for example string or number) and <code>h</code> a function taking <code>a</code> and returning for example a coroutine.</p>
 <ul>
@@ -32,7 +32,7 @@
 <h3>Left identity</h3>
 <pre><code class="language-haskell">m &gt;&gt;= return       ===     m
 </code></pre>
-<p>This one is even easier and it says that chaining a function that only takes an argument and put's into the context doesn't have any effect on it. It is somewhat boosted version of applying identity function.</p>
+<p>This one is even easier. It says that chaining a function that puts its input into the context doesn't have any effect on it. It is somewhat a boosted version of applying an identity function.</p>
 <h3>Associativity</h3>
 <pre><code class="language-haskell">(m &gt;&gt;= g) &gt;&gt;= h    ===     m &gt;&gt;= (\x -&gt; g x &gt;&gt;= h)
 </code></pre>
@@ -60,12 +60,12 @@ Fn = Callable[[A], B]
 Task = Coroutine[Any, Any, A]
 IO = Callable[[], A]
 </code></pre>
-<p>Now we will create the <code>return</code> function and name it <code>of</code>. Its only purpose is to create a coroutine that contains its input value.</p>
+<p>Now, we will create the <code>return</code> function and name it <code>of</code> instead. Its only purpose is to create a coroutine that contains its input value.</p>
 <pre><code class="language-python"># of :: A -&gt; Task[A]
 async def of(a: A) -&gt; A:
 	return a
 </code></pre>
-<p>We will implement <code>&gt;&gt;=</code> as <code>chain</code> and note that it has switched arguments.</p>
+<p>We will create the <code>chain</code> function which behaves the same as <code>&gt;&gt;=</code> but arguments are in opposite order.</p>
 <pre><code class="language-python"># chain :: (A -&gt; Task[B]) -&gt; Task[A] -&gt; Task[B]
 async def chain(fn: Fn[A, Task[B]], fa: Task[A]) -&gt; B:
     return await fn(await fa)
@@ -75,13 +75,13 @@ async def chain(fn: Fn[A, Task[B]], fa: Task[A]) -&gt; B:
 result = await f1(intermediate_result)
 </code></pre>
 <h2>Monad laws in Python</h2>
-<p>Having <code>chain</code> and <code>of</code> it is rather straightforward to rewrite Haskell formulation into Python.</p>
+<p>Having <code>chain</code> and <code>of</code>, it is now rather straightforward to rewrite the Haskell formulation into (pseudo) Python.</p>
 <pre><code class="language-python">chain(h, of(a)) === h(a)
 chain(of, m) === m
 chain(h, chain(g, m)) === chain(lambda x: chain(h, g(x)), m)
 </code></pre>
 <h2>Combining <code>IO</code> and <code>Task</code> in Python</h2>
-<p>Below, we can see a working example of purely functional Python program run in the event loop that combines a blocking and asynchronous effects. I added another <code>chain_io</code> combinator which allows us to run <code>IO</code> effect in the <code>Task</code> context.</p>
+<p>Below, we can see a working example of a purely functional Python program run in the event loop that combines blocking and asynchronous effects. I added another <code>chain_io</code> combinator which allows us to run <code>IO</code> effect in the <code>Task</code> context.</p>
 <p>The program doesn't really do much, it simulates a long-running asynchronous operation (in the <code>do_stuff</code> function) whose result is printed to the standard output.</p>
 <pre><code class="language-python">import asyncio
 from typing import Any, Protocol, TypeVar, Callable, Coroutine
@@ -109,7 +109,7 @@ class ToString(Protocol):
         ...
 
 def print_io(message: ToString) -&gt; IO[None]:
-    return lambda: print(str(message))
+    return lambda: print(message)
 
 def print_task(fa: Task[ToString]) -&gt; Task[None]:
     return chain_io(print_io, fa)
@@ -123,7 +123,6 @@ async def do_stuff(value: str) -&gt; tuple[str, int]:
 program = print_task(chain(do_stuff, of(&quot;test&quot;)))
 
 asyncio.run(program)
-
 </code></pre>
 </div>
   </body>
