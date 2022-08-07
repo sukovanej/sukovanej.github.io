@@ -38,6 +38,13 @@ code {
     color: #fff;
 }
 
+.header-created-at {
+    font-size: 14px;
+    color: #ff7e47;
+    font-weight: bold;
+    float: right;
+}
+
 .header {
     margin: 20px 0px;
 }

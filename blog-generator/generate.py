@@ -50,6 +50,7 @@ class ParsedFile(BaseModel):
     title: str
     tags: list[str] | None = None
     created_at: datetime | date | None = None
+    file_name: Path
 
 
 class ParsedHtml(ParsedFile):
@@ -63,7 +64,7 @@ class ParsedHtml(ParsedFile):
 def generate_html(file_name: Path):
     text = open(file_name).read()
     post = frontmatter.loads(text)
-    parsed_file = ParsedFile(**post.to_dict())
+    parsed_file = ParsedFile(file_name=file_name, **post.to_dict())
     html = markdown.convert(parsed_file.content)
     parsed_html = ParsedHtml.from_parsed_file(parsed_file, html)
     return _generate_html(parsed_html)
@@ -71,10 +72,15 @@ def generate_html(file_name: Path):
 
 def _generate_html(parsed_html: ParsedHtml) -> str:
     tag_html_list = [tag_template.format(tag=tag) for tag in parsed_html.tags or []]
-    header_html = header_template.format(tags="".join(tag_html_list))
+    header_html = header_template.format(tags="".join(tag_html_list), created_at=parsed_html.created_at)
+
+    content = parsed_html.html
+
+    if parsed_html.file_name != base_path / index_path:
+        content = f"{header_html}{content}"
 
     main_html = main_template.format(
-        content=f"{header_html}{parsed_html.html}", title=parsed_html.title
+        content=content, title=parsed_html.title
     )
     return main_html
 
