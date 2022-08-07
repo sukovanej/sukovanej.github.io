@@ -11,7 +11,7 @@ clean:
 generate:
 	make clean
 	poetry run python generate.py
-	cp -r output/* ../
+	cp -r output/* ../docs/
 	make clean
 
 format:
