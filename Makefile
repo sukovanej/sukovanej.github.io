@@ -1,4 +1,9 @@
-.PHONY: generate
+.PHONY: generate serve
+
+BLOG_GENERATOR=blog-generator
 
 generate:
-	cd blog-generator && make generate
+	cd ${BLOG_GENERATOR} && make generate
+
+serve:
+	cd ${BLOG_GENERATOR} && make serve

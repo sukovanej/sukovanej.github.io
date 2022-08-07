@@ -3,7 +3,7 @@
 OUTPUT_PATH='./output/html'
 
 serve:
-	poetry run python -m http.server --dir output
+	poetry run python -m http.server --dir ../docs
 
 clean:
 	rm -rf output
