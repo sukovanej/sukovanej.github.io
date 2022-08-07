@@ -11,14 +11,14 @@
   <body>
     <div class="content">
       <div class="content-title">
-        <span class="go-home-btn"><a href="/">&#127968; Go home</a></span>
         <h1>Python's asyncio as Monads</h1>
+        <span class="go-home-btn"><a href="/">&#127968; Go home</a></span>
       </div>
       <div class="header">
-  <span class="header-created-at">2022-08-07</span>
-  <span class="header-tag">functional-programming</span>
+  <span class="header-tags"><span class="header-tag">functional-programming</span>
 <span class="header-tag">monads</span>
-
+</span>
+  <span class="header-created-at">2022-08-07</span>
 </div>
 <p>I assume Python's asyncio is monadic the same way Javascript's Promise is. My original motivation was to check what would happen if any of the monad laws didn't hold for it. Unfortunately, it turns out these three laws feel so fundamental that I couldn't really think of a way to hypothetically break them. So instead, I'll just show a working example of formulation of these laws in Python for asyncio along with usual representation of <code>IO</code>.</p>
 <h2>Monad laws</h2>

@@ -42,11 +42,14 @@ code {
     font-size: 14px;
     color: #ff7e47;
     font-weight: bold;
-    float: right;
 }
 
 .header {
     margin: 20px 0px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
 }
 
 a {
@@ -73,12 +76,14 @@ footer {
     color: #aaa;
 }
 
-.go-home-btn {
-    float: right;
-}
+.go-home-btn { }
 
 .content-title {
     border-bottom: 1px solid #ddd;
     padding-bottom: 20px;
     margin-bottom: 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap-reverse;
 }
