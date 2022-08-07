@@ -47,6 +47,7 @@ markdown = Markdown(extensions=[LinkExtension])
 
 class ParsedFile(BaseModel):
     content: str
+    title: str
     tags: list[str] | None = None
     created_at: datetime | date | None = None
 
@@ -72,7 +73,9 @@ def _generate_html(parsed_html: ParsedHtml) -> str:
     tag_html_list = [tag_template.format(tag=tag) for tag in parsed_html.tags or []]
     header_html = header_template.format(tags="".join(tag_html_list))
 
-    main_html = main_template.format(content=f"{header_html}{parsed_html.html}")
+    main_html = main_template.format(
+        content=f"{header_html}{parsed_html.html}", title=parsed_html.title
+    )
     return main_html
 
 
