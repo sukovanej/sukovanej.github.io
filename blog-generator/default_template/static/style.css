@@ -71,3 +71,13 @@ footer {
     padding-top: 20px;
     color: #aaa;
 }
+
+.go-home-btn {
+    float: right;
+}
+
+.content-title {
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 20px;
+    margin-bottom: 25px;
+}
