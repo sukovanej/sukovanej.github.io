@@ -56,3 +56,11 @@ ul li code, p code, h1 code, h2 code {
     padding: 3px;
     border-radius: 3px;
 }
+
+footer {
+    max-width: 1000px;
+    margin: 30px auto;
+    border-top: 1px solid #ddd;
+    padding-top: 20px;
+    color: #aaa;
+}
