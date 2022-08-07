@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import hashlib
 import shutil
 from datetime import date, datetime
+from functools import reduce
 from pathlib import Path
 
 import frontmatter
@@ -71,17 +73,20 @@ def generate_html(file_name: Path):
 
 
 def _generate_html(parsed_html: ParsedHtml) -> str:
-    tag_html_list = [tag_template.format(tag=tag) for tag in parsed_html.tags or []]
-    header_html = header_template.format(tags="".join(tag_html_list), created_at=parsed_html.created_at)
+    tag_html_list = [
+        tag_template.format(tag=tag, tag_color=string_to_stable_color(tag))
+        for tag in parsed_html.tags or []
+    ]
+    header_html = header_template.format(
+        tags="".join(tag_html_list), created_at=parsed_html.created_at
+    )
 
     content = parsed_html.html
 
     if parsed_html.file_name != base_path / index_path:
         content = f"{header_html}{content}"
 
-    main_html = main_template.format(
-        content=content, title=parsed_html.title
-    )
+    main_html = main_template.format(content=content, title=parsed_html.title)
     return main_html
 
 
@@ -90,6 +95,17 @@ def save_output(file_name: str, html: str) -> None:
     new_file = output_path / html_file_name
     new_file.parent.mkdir(exist_ok=True, parents=True)
     new_file.write_text(html)
+
+
+def string_to_stable_color(value: str) -> str:
+    NUMBER_OF_COLORS = 16**6
+
+    hash_bytes = list(hashlib.sha256(bytes(value, "utf8")).digest())
+    _reduce = lambda acc, x: ((acc[0] + x) * acc[1], acc[1] + 1)
+    number = reduce(_reduce, hash_bytes, [1, 0])[0]
+    color = "#" + hex(number % NUMBER_OF_COLORS)[2:].zfill(6)
+
+    return color
 
 
 def main():
