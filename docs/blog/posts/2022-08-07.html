@@ -9,12 +9,13 @@
     <title>Python's asyncio as Monads</title>
   </head>
   <body>
-    <div class="content"><div class="header">
+    <div class="content">
+      <h1>Python's asyncio as Monads</h1>
+      <div class="header">
   <span class="header-tag">functional-programming</span>
 <span class="header-tag">monads</span>
 
 </div>
-<h1>Python's asyncio as Monads</h1>
 <p>I assume Python's asyncio is monadic the same way Javascript's Promise is. My original motivation was to check what would happen if any of the monad laws didn't hold for it. Unfortunately, it turns out these three laws feel so fundamental that I couldn't really think of a way to hypothetically break them. So instead, I'll just show a working example of formulation of these laws in Python for asyncio along with usual representation of <code>IO</code>.</p>
 <h2>Monad laws</h2>
 <p>Let's summarise monad laws using Haskell pseudo code (taken from the <a href="https://wiki.haskell.org/Monad_laws.html">haskell wiki</a>). Think of <code>a</code> being a pure value (for example string or number) and <code>h</code> a function taking <code>a</code> and returning for example a coroutine.</p>
@@ -125,7 +126,8 @@ program = print_task(chain(do_stuff, of(&quot;test&quot;)))
 
 asyncio.run(program)
 </code></pre>
-</div>
+
+    </div>
     <footer>
       This website was generated from <a href="https://obsidian.md/">obsidian</a> by a custom generator.
     </footer>
