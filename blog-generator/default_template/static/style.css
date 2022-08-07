@@ -1,0 +1,58 @@
+@font-face{
+    font-family: 'JetBrainsMono';
+    src: url('https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono/web/woff2/JetBrainsMono-Regular.woff2') format('woff2'),
+        url('https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono/web/woff/JetBrainsMono-Regular.woff') format('woff'),
+        url('https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono/ttf/JetBrainsMono-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+}
+
+body {
+    font-family: JetBrainsMono;
+    -webkit-font-feature-settings: "liga" on, "calt" on;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    line-height: 30px;
+}
+
+.hljs {
+    font-family: 'JetBrainsMono' !important;
+    background: #fafafa !important;
+}
+
+code {
+    font-family: 'JetBrainsMono' !important;
+}
+
+.content {
+    max-width: 1000px;
+    margin: 30px auto;
+    padding: 0px 20px;
+}
+
+.header-tag {
+    font-size: 14px;
+    padding: 5px;
+    border-radius: 3px;
+    background-color: #ff7e47;
+    color: #fff;
+}
+
+.header {
+    margin: 20px 0px;
+}
+
+a {
+    color: #849aa3;
+    text-decoration: none;
+}
+
+a:hover {
+    color: #a3b7bf;
+}
+
+ul li code, p code, h1 code, h2 code {
+    background-color: #f0f0f0;
+    padding: 3px;
+    border-radius: 3px;
+}
