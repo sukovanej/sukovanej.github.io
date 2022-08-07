@@ -8,9 +8,7 @@ import frontmatter
 from marko import Markdown, html_renderer, inline
 from pydantic import BaseModel
 
-base_path = Path(
-    "/Users/milansuk/Library/Mobile Documents/iCloud~md~obsidian/Documents/obsidian/"
-)
+base_path = Path("../")
 files = ["blog/index.md", "blog/posts/2022-08-07.md"]
 index_path = "blog/index.md"
 
