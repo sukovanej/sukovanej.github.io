@@ -14,3 +14,7 @@ generate:
 format:
 	poetry run black src
 	poetry run isort src
+
+check:
+	poetry run mypy src
+	poetry run pylint src

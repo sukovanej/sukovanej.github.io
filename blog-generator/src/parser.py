@@ -5,7 +5,7 @@ from datetime import date, datetime
 from pathlib import Path
 
 import frontmatter
-from marko import Markdown, html_renderer
+from marko import Markdown, html_renderer, inline
 from pydantic import BaseModel
 
 ParsedLinks = list[str]
@@ -30,7 +30,7 @@ class ParsedHtml(ParsedFile):
 
 def create_renderer(parsed_links: ParsedLinks) -> type[html_renderer.HTMLRenderer]:
     class LinkRendererMixin(html_renderer.HTMLRenderer):
-        def render_link(self, element):
+        def render_link(self, element: inline.Link) -> str:
             parsed_links.append(element.dest)
 
             new_element = copy(element)
@@ -52,7 +52,7 @@ def create_markdown() -> tuple[Markdown, list[str]]:
 
 
 def parse_markdown(file_name: Path) -> tuple[ParsedHtml, ParsedLinks]:
-    text = open(file_name).read()
+    text = file_name.read_text()
     post = frontmatter.loads(text)
     parsed_file = ParsedFile(file_name=file_name, **post.to_dict())
     markdown, parsed_links = create_markdown()
