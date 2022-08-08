@@ -9,10 +9,7 @@ clean:
 	rm -rf output
 
 generate:
-	make clean
 	poetry run python generate.py
-	cp -r output/* ../docs/
-	make clean
 
 format:
 	poetry run black generate.py
