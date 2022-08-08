@@ -1,8 +1,11 @@
 [tool.poetry]
-name = "sukovanej-blog"
+name = "obsidian-generator"
 version = "0.1.0"
 description = ""
 authors = ["Milan Suk"]
+packages = [
+    { include = "src" },
+]
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -17,3 +20,6 @@ isort = "^5.10.1"
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+generate = 'src.cli:generate'

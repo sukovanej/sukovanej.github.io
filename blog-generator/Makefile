@@ -9,8 +9,8 @@ clean:
 	rm -rf output
 
 generate:
-	poetry run python generate.py
+	poetry run generate
 
 format:
-	poetry run black generate.py
-	poetry run isort generate.py
+	poetry run black src
+	poetry run isort src
