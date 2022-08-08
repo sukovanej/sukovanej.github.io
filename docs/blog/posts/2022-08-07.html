@@ -123,11 +123,11 @@ def print_task(fa: Task[ToString]) -&gt; Task[None]:
 
 # program
 
-async def do_stuff(value: str) -&gt; tuple[str, int]:
+async def do_stuff(name: str) -&gt; tuple[str, int]:
     await asyncio.sleep(1)
-    return (value, 3)
+    return (f&quot;The most beautiful name in the world is {name}&quot;, 69)
 
-program = print_task(chain(do_stuff, of(&quot;test&quot;)))
+program = print_task(chain(do_stuff, of(&quot;Milan&quot;)))
 
 asyncio.run(program)
 </code></pre>
