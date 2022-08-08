@@ -21,6 +21,7 @@
 </span>
   <span class="header-created-at">2022-08-07</span>
 </div>
+<p>I'll show how to represent functional effects in Python and how we can implement <code>return</code> and <code>&gt;&gt;=</code> functions for Python coroutines. Then we'll formulate Monad laws using these and finally implement a simple working example of pure functional Python program with synchronous and asynchronous effects.</p>
 <p>I assume Python's asyncio is monadic the same way Javascript's Promise is. My original motivation was to check what would happen if any of the monad laws didn't hold for it. Unfortunately, it turns out these three laws feel so fundamental that I couldn't really think of a way to hypothetically break them. So instead, I'll just show a working example of formulation of these laws in Python for asyncio along with usual representation of <code>IO</code>.</p>
 <h2>Monad laws</h2>
 <p>Let's summarise monad laws using Haskell pseudo code (taken from the <a href="https://wiki.haskell.org/Monad_laws.html">haskell wiki</a>). Think of <code>a</code> being a pure value (for example string or number) and <code>h</code> a function taking <code>a</code> and returning for example a coroutine.</p>
