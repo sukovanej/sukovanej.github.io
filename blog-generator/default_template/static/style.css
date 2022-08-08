@@ -87,3 +87,7 @@ footer {
     align-items: center;
     flex-wrap: wrap-reverse;
 }
+
+h1 {
+    line-height: 50px;
+}

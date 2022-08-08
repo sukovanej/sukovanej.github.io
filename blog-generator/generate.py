@@ -1,15 +1,16 @@
 from __future__ import annotations
 
 import shutil
+from copy import copy
 from datetime import date, datetime
 from pathlib import Path
 
 import frontmatter
-from marko import Markdown, html_renderer, inline
+from marko import Markdown, html_renderer
 from pydantic import BaseModel
 
 base_path = Path("../")
-files = ["blog/index.md", "blog/posts/2022-08-07.md"]
+files = ["blog/index.md", "blog/posts/2022-08-07.md", "blog/posts/2022-08-08.md"]
 index_path = "blog/index.md"
 
 output_path = Path("output")
@@ -26,19 +27,12 @@ tag_template = open(tag_template_path).read()
 
 class LinkRendererMixin(html_renderer.HTMLRenderer):
     def render_link(self, element):
-        template = '<a href="{}.html"{}>{}</a>'
-        title = f' title="{self.escape_html(element.title)}"' if element.title else ""
-        url = self.escape_url(element.dest)
-        body = self.render_children(element)
-        return template.format(url, title, body)
-
-
-class Link(inline.Link):
-    override = True
+        new_element = copy(element)
+        new_element.dest = f"{new_element.dest}.html"
+        return super().render_link(new_element)
 
 
 class LinkExtension:
-    elements = [Link]
     renderer_mixins = [LinkRendererMixin]
 
 
@@ -72,16 +66,16 @@ def generate_html(file_name: Path):
 
 def _generate_html(parsed_html: ParsedHtml) -> str:
     tag_html_list = [tag_template.format(tag=tag) for tag in parsed_html.tags or []]
-    header_html = header_template.format(tags="".join(tag_html_list), created_at=parsed_html.created_at)
+    header_html = header_template.format(
+        tags="".join(tag_html_list), created_at=parsed_html.created_at
+    )
 
     content = parsed_html.html
 
     if parsed_html.file_name != base_path / index_path:
         content = f"{header_html}{content}"
 
-    main_html = main_template.format(
-        content=content, title=parsed_html.title
-    )
+    main_html = main_template.format(content=content, title=parsed_html.title)
     return main_html
 
 
