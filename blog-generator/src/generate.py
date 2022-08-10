@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import shutil
 from pathlib import Path
+
 from pydantic import BaseModel
 
 from .parser import ParsedHtml, ParsedLinks, parse_markdown
@@ -52,7 +53,9 @@ def _render_html(template: Template, parsed_html: ParsedHtml) -> str:
     return main_html
 
 
-def render_html_pages(template: Template, index_path: Path, base_path: Path) -> dict[Path, str]:
+def render_html_pages(
+    template: Template, index_path: Path, base_path: Path
+) -> dict[Path, str]:
     remaining_file_names = [index_path]
     parsed_file_names: dict[Path, str] = {}
 
@@ -77,7 +80,6 @@ def save_output(output_path: Path, file_name: Path, html: str) -> None:
     new_file = output_path / html_file_name
     new_file.parent.mkdir(exist_ok=True, parents=True)
     new_file.write_text(html)
-
 
 
 def create_template(template_path: Path) -> Template:

@@ -3,9 +3,11 @@ from __future__ import annotations
 from copy import copy
 from datetime import date, datetime
 from pathlib import Path
+from typing import cast
 
 import frontmatter
 from marko import Markdown, html_renderer, inline
+from marko.element import Element
 from pydantic import BaseModel
 
 ParsedLinks = list[str]
@@ -51,10 +53,24 @@ def create_markdown() -> tuple[Markdown, list[str]]:
     return (Markdown(extensions=[LinkExtension]), parsed_links)
 
 
+class WithoutParagraphRendererMixin(html_renderer.HTMLRenderer):
+    def render_paragraph(self, element: Element) -> str:
+        return cast(str, self.render_children(element))
+
+
+class WithoutParagraphExtension:
+    renderer_mixins = [WithoutParagraphRendererMixin]
+
+
 def parse_markdown(file_name: Path) -> tuple[ParsedHtml, ParsedLinks]:
     text = file_name.read_text()
     post = frontmatter.loads(text)
+
     parsed_file = ParsedFile(file_name=file_name, **post.to_dict())
+
+    header_markdown = Markdown(extensions=[WithoutParagraphExtension])
+    parsed_file.title = header_markdown.convert(parsed_file.title)
+
     markdown, parsed_links = create_markdown()
     html = markdown.convert(parsed_file.content)
     return ParsedHtml.from_parsed_file(parsed_file, html), parsed_links
