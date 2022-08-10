@@ -25,14 +25,14 @@
 <pre><code class="language-python">from pydantic import BaseModel
 
 class SearchByIdRequest(BaseModel):
-	id: int
+    id: int
 
 class SearchByNameRequest(BaseModel):
-	name: str
+    name: str
 
 class SearchResponse(BaseModel):
-	id: int
-	name: str
+    id: int
+    name: str
 
 SearchRequest = SearchByIdRequest | SearchByNameRequest
 </code></pre>
@@ -48,18 +48,18 @@ def search_by_name(name: str) -&gt; list[SearchResponse]:
 </code></pre>
 <p>The DB handler function might look as follows.</p>
 <pre><code class="language-python">def is_by_id_request(request: SearchRequest) -&gt; bool:
-	return isinstance(request, SearchByIdRequest)
+    return isinstance(request, SearchByIdRequest)
 
 def is_by_name_request(request: SearchRequest) -&gt; bool:
-	return isinstance(request, SearchByNameRequest)
+    return isinstance(request, SearchByNameRequest)
 
 def run_database_query(request: SearchRequest) -&gt; list[SearchResponse]:
-	if is_by_id_request(request):
-		return search_by_id(request.id)
-	elif is_by_name_request(request):
-		return search_by_name(request.name)
+    if is_by_id_request(request):
+        return search_by_id(request.id)
+    elif is_by_name_request(request):
+        return search_by_name(request.name)
 
-	raise UnexpectedRequestError
+    raise UnexpectedRequestError
 </code></pre>
 <p>Such a code works but mypy will be very unsatisfied and as result will produce following errors.</p>
 <pre><code>typguard_example.py:32: error: Item &quot;SearchByNameRequest&quot; of &quot;Union[SearchByIdRequest, SearchByNameRequest]&quot; has no attribute &quot;id&quot;
@@ -71,15 +71,15 @@ Found 2 errors in 1 file (checked 1 source file)
 <pre><code class="language-python">from typing import TypeGuard
 
 def is_by_id_request(request: SearchRequest) -&gt; TypeGuard[SearchByIdRequest]:
-	return isinstance(request, SearchByIdRequest)
+    return isinstance(request, SearchByIdRequest)
 
 def is_by_name_request(request: SearchRequest) -&gt; TypeGuard[SearchByNameRequest]:
-	return isinstance(request, SearchByNameRequest)
+    return isinstance(request, SearchByNameRequest)
 </code></pre>
 <p>Now, try to hover over the <code>request</code> variable in your IDE / editor with mypy enabled.</p>
 <pre><code class="language-python">...
-	if is_by_id_request(request):
-		return search_by_id(request.id)  # &lt;- mypy will say this request is SearchByIdRequest
+    if is_by_id_request(request):
+        return search_by_id(request.id)  # &lt;- mypy will say this request is SearchByIdRequest
 ...
 </code></pre>
 <p>You can think of <code>TypeGuard[T]</code> being a special, magical and unicornish version of basic <code>bool</code>. During the runtime, it still produces bool and mypy doesn't have any problems accepting result of narrowing function on places where bool is expected. For example, the following code type-checks.</p>

@@ -24,7 +24,7 @@
 <h2>Marko extensions</h2>
 <p>Marko allows to extend its behaviour using extensions. Extensions can be provided in the constructor of the <code>Markdown</code> class. Let's call our extension <code>LinkExtension</code>.</p>
 <pre><code class="language-python">class LinkExtension:
-	&quot;&quot;&quot;TODO&quot;&quot;&quot;
+    &quot;&quot;&quot;TODO&quot;&quot;&quot;
 
 markdown = Markdown(extensions=[LinkExtension])
 </code></pre>
@@ -64,12 +64,12 @@ class LinkExtension:
     renderer_mixins = [LinkRendererMixin]
 
 def main():
-	markdown = Markdown(extensions=[LinkExtension])
-	example_text = &quot;Hello world with [link](files/another_one)&quot;
-	print(markdown.convert(example_text))
+    markdown = Markdown(extensions=[LinkExtension])
+    example_text = &quot;Hello world with [link](files/another_one)&quot;
+    print(markdown.convert(example_text))
 
 if __name__ == &quot;__main__&quot;:
-	main()
+    main()
 
 </code></pre>
 <p>which output is</p>

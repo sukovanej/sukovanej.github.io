@@ -46,7 +46,7 @@ B = TypeVar(&quot;B&quot;)
 C = TypeVar(&quot;C&quot;)
 
 def pipe(init: A, f: Fn[A, B], g: Fn[B, C]) -&gt; C:
-	...
+    ...
 </code></pre>
 <p>Unfortunately, there doesn't seem to be an easy way to write such a generic function in a type-safe manner. So, we'll employ similar approach functional libraries in Typescript do, we'll create <strong>function overloads</strong>.</p>
 <h2><code>@overload</code> decorator</h2>
@@ -67,15 +67,15 @@ SearchResponse = SearchByIdResponse | SearchByNameResponse
 
 @overload
 def run_database_query(request: SearchByIdRequest) -&gt; SearchByIdResponse:
-	...
+    ...
 
 @overload
 def run_database_query(request: SearchByNameRequest) -&gt; SearchByNameResponse:
-	...
+    ...
 
 def run_database_query(request: Any) -&gt; Any:
-	# actual implementation
-	...
+    # actual implementation
+    ...
 </code></pre>
 <p>As the <a href="https://docs.python.org/3/library/typing.html#typing.overload.html">typing docs</a> says, after a series of overloaded definitions there must be exactly one not-decorated definition. During the runtime, all the previous <code>@overload</code>-decorated function will be overwritten by the last definition. The type signature of the last function doesn't really matter, it can be omitted completely so I put there <code>Any</code>. Mypy will check whether the function implementation can handle all the overloads by checking the arguments for us. Otherwise, it is completely in our hands to implement the function correctly with respect to specified overloads.</p>
 <h2>Final solution</h2>

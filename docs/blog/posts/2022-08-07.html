@@ -71,7 +71,7 @@ IO = Callable[[], A]
 <p>Now, we will create the <code>return</code> function and name it <code>of</code> instead. Its only purpose is to create a coroutine that contains its input value.</p>
 <pre><code class="language-python"># of :: A -&gt; Task[A]
 async def of(a: A) -&gt; A:
-	return a
+    return a
 </code></pre>
 <p>We will create the <code>chain</code> function which behaves the same as <code>&gt;&gt;=</code> but arguments are in opposite order.</p>
 <pre><code class="language-python"># chain :: (A -&gt; Task[B]) -&gt; Task[A] -&gt; Task[B]
