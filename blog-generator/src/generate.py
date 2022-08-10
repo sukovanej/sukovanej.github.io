@@ -49,7 +49,11 @@ def _render_header_html(template: Template, parsed_html: ParsedHtml) -> str:
 def _render_html(template: Template, parsed_html: ParsedHtml) -> str:
     header_html = _render_header_html(template, parsed_html)
     content_html = f"{header_html}{parsed_html.html}"
-    main_html = template.main.format(content=content_html, title=parsed_html.title)
+    main_html = template.main.format(
+        content=content_html,
+        title=parsed_html.title,
+        page_header=parsed_html.page_header,
+    )
     return main_html
 
 

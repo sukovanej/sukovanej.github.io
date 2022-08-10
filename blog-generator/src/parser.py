@@ -19,6 +19,7 @@ class ParsedFile(BaseModel):
     tags: list[str] | None = None
     created_at: datetime | date | None = None
     file_name: Path
+    page_header: str
     render_header: bool = True
 
 
@@ -64,13 +65,18 @@ class WithoutParagraphExtension:
 
 def parse_markdown(file_name: Path) -> tuple[ParsedHtml, ParsedLinks]:
     text = file_name.read_text()
-    post = frontmatter.loads(text)
 
-    parsed_file = ParsedFile(file_name=file_name, **post.to_dict())
+    post = frontmatter.loads(text)
+    post_dict = post.to_dict()
 
     header_markdown = Markdown(extensions=[WithoutParagraphExtension])
-    parsed_file.title = header_markdown.convert(parsed_file.title)
+
+    title = post_dict["title"]
+
+    parsed_file = ParsedFile(file_name=file_name, page_header=title, **post.to_dict())
+    parsed_file.page_header = header_markdown.convert(parsed_file.page_header)
 
     markdown, parsed_links = create_markdown()
     html = markdown.convert(parsed_file.content)
+
     return ParsedHtml.from_parsed_file(parsed_file, html), parsed_links
