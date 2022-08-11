@@ -1,0 +1,129 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="/static/normalize.css" />
+    <link rel="stylesheet" href="/static/style.css" />
+    <link rel="stylesheet" href="/static/github.min.css">
+    <meta charset="utf-8">
+    <script src="/static/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Type-safe `pipe` function implementation in Python</title>
+  </head>
+  <body>
+    <div class="content">
+      <div class="content-title">
+        <h1>Type-safe <code>pipe</code> function implementation in Python</h1>
+        <span class="go-home-btn"><a href="/">&#127968; Go home</a></span>
+      </div>
+      <div class="header">
+  <span class="header-tags"><span class="header-tag">Functional programming</span>
+<span class="header-tag">Python</span>
+<span class="header-tag">Typing</span>
+</span>
+  <span class="header-created-at">2022-08-10</span>
+</div>
+<p>I'm currently investigating how to implement some pure functional concepts in the Python. One of the very basic things we use in functional programming is composition of functions and a similar concept, piping value through a list of functions. In some languages (like F# or Elixir) there are builtin operators for that. For example F# has something like this.</p>
+<pre><code class="language-fsharp">value |&gt; firstFunction |&gt; secondFunction
+</code></pre>
+<p>In Python (or in Javascript) we can implement the behaviour using function accepting arbitrary number of arguments.</p>
+<pre><code class="language-python">pipe(value, first_function, second_function)
+</code></pre>
+<p>Which we want to be equivalent to this.</p>
+<pre><code class="language-python">second_function(first_function(value))
+</code></pre>
+<p>And actually, creating such a function in Python isn't really hard. We just accept whatever position arguments and then apply one after one. I decided for the recursive implementation, but it should be doable also using for / while loops or reduce function from <code>itertools</code>.</p>
+<pre><code class="language-python">def pipe(init, *fns):
+    if len(fns) == 0:
+        return init
+    return pipe(fns[0](init), *fns[1:])
+</code></pre>
+<p>Now, this works, but we don't have any types to have our back after we screw something up. What we want is the compiler to know, that if <code>f1 :: A -&gt; B</code> and <code>f2 :: B -&gt; C</code>, then <code>pipe(a, f1, f2)</code> has type <code>C</code>. Also we want to make sure that every result of previously evaluated function can be passed to input of the very next function.</p>
+<p>For example, if <code>pipe</code> supported only two functions, we want something like this.</p>
+<pre><code class="language-python">from typing import Callable, TypeVar
+
+Fn = Callable[[A], B]
+
+A = TypeVar(&quot;A&quot;)
+B = TypeVar(&quot;B&quot;)
+C = TypeVar(&quot;C&quot;)
+
+def pipe(init: A, f: Fn[A, B], g: Fn[B, C]) -&gt; C:
+    ...
+</code></pre>
+<p>Unfortunately, there doesn't seem to be an easy way to write such a generic function in a type-safe manner. So, we'll employ similar approach functional libraries in Typescript do, we'll create <strong>function overloads</strong>.</p>
+<h2><code>@overload</code> decorator</h2>
+<p>Python's <code>typing</code> module has the <code>overload</code> decorator. But what is overloading anyway?</p>
+<p>Overloading is a technique used to create multiple variants of the same function with different type signatures. Don't confuse with function overriding which is a different technique! Some languages like C# support compile-time dispatch along with overloading. That means, you're allowed to overload a function and when calling the function, compiler will decide which overload to choose. Python doesn't do that by itself but there's actually a <code>singledispatch</code> decorator in the standard library which implements the dispatch behaviour on the first argument of the decorated function. Check the <a href="https://docs.python.org/3/library/functools.html#functools.singledispatch.html">official docs page</a> for more information.</p>
+<p>We can't use the dispatch because we'd need to dispatch on all the parameters of the function (although, I can image such a decorator would be possible to implement). Instead, we'll use the <code>overload</code> decorator to communicate to the type-checker which signatures we're aiming to support and then provide a single implementation.</p>
+<p>If we wanted to boost our implementation of handling different requests  from <a href="blog/posts/2022/08-august/2022-08-09.md.html">the post about TypeGuard</a> by returning specific response based on the input model, we could do something like this.</p>
+<pre><code class="language-python">from typing import Any, overload
+
+SearchByIdRequest = ...
+SearchByNameRequest = ...
+
+SearchByIdResponse = ...
+SearchByNameResponse = ...
+
+SearchRequest = SearchByIdRequest | SearchByNameRequest
+SearchResponse = SearchByIdResponse | SearchByNameResponse
+
+@overload
+def run_database_query(request: SearchByIdRequest) -&gt; SearchByIdResponse:
+    ...
+
+@overload
+def run_database_query(request: SearchByNameRequest) -&gt; SearchByNameResponse:
+    ...
+
+def run_database_query(request: Any) -&gt; Any:
+    # actual implementation
+    ...
+</code></pre>
+<p>As the <a href="https://docs.python.org/3/library/typing.html#typing.overload.html">typing docs</a> says, after a series of overloaded definitions there must be exactly one not-decorated definition. During the runtime, all the previous <code>@overload</code>-decorated function will be overwritten by the last definition. The type signature of the last function doesn't really matter, it can be omitted completely so I put there <code>Any</code>. Mypy will check whether the function implementation can handle all the overloads by checking the arguments for us. Otherwise, it is completely in our hands to implement the function correctly with respect to specified overloads.</p>
+<h2>Final solution</h2>
+<p>The final implementation looks like this. Of course, it has a big disadvantage that whenever someone calls the pipe with more arguments than the very last overload, the mypy will produce errors. From the experience, I almost never use <code>pipe</code> with more than 10 arguments. Therefore, there will be a small bulk of overloads and we can safely add new ones if needed because the actual implementation can handle an arbitrary number of arguments.</p>
+<p>Also, I needed to use the <em>positional-arguments-only</em> syntax in my overloads. Otherwise, mypy would  yell it me. In the very last implementation function, I accept arbitrary positional arguments, but overloads say you could invoke the <code>pipe</code> the like this.</p>
+<pre><code class="language-python">pipe(init=1, f=lambda x: x + 1, g=list)
+</code></pre>
+<p>Which is not correct, because the last implementation function accepts only arbitrary positional arguments.</p>
+<p>Just for completeness, it is actually not necessary to use the <code>/</code> syntax. If I named all the parameters with double underscore (<code>__init</code>, <code>__f</code>, ...) it would have the same effect for mypy.</p>
+<pre><code class="language-python">from typing import Any, Callable, TypeVar, overload
+
+Fn = Callable[[A], B]
+
+A = TypeVar(&quot;A&quot;)
+B = TypeVar(&quot;B&quot;)
+C = TypeVar(&quot;C&quot;)
+D = TypeVar(&quot;D&quot;)
+
+@overload
+def pipe(init: A, /) -&gt; A:
+    ...
+
+@overload
+def pipe(init: A, f: Fn[A, B], /) -&gt; B:
+    ...
+
+@overload
+def pipe(init: A, f: Fn[A, B], g: Fn[B, C], /) -&gt; C:
+    ...
+
+@overload
+def pipe(init: A, f: Fn[A, B], g: Fn[B, C], h: Fn[C, D], /) -&gt; D:
+    ...
+
+# etc...
+
+def pipe(init: Any, *fns: Any) -&gt; Any:
+    &quot;&quot;&quot;Transform value `init` using provided functions one by one.&quot;&quot;&quot;
+    if len(fns) == 0:
+        return init
+    return pipe(fns[0](init), *fns[1:])
+</code></pre>
+
+    </div>
+    <footer>
+      This website was generated from <a href="https://obsidian.md/">obsidian</a> by a custom generator.
+    </footer>
+  </body>
+</html>

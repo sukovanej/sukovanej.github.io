@@ -1,0 +1,85 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="/static/normalize.css" />
+    <link rel="stylesheet" href="/static/style.css" />
+    <link rel="stylesheet" href="/static/github.min.css">
+    <meta charset="utf-8">
+    <script src="/static/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom `Link` extension for `marko` markdown Python library</title>
+  </head>
+  <body>
+    <div class="content">
+      <div class="content-title">
+        <h1>Custom <code>Link</code> extension for <code>marko</code> markdown Python library</h1>
+        <span class="go-home-btn"><a href="/">&#127968; Go home</a></span>
+      </div>
+      <div class="header">
+  <span class="header-tags"><span class="header-tag">Python</span>
+</span>
+  <span class="header-created-at">2022-08-08</span>
+</div>
+<p>I generate this site using a simple Python script (currently 108 LOC) from markdown files created using <a href="https://obsidian.md/.html">obsidian</a>. I use <a href="https://github.com/eyeseast/python-frontmatter.html">python-frontmatter</a> Python library to parse the markdown with yaml header and then <a href="https://github.com/frostming/marko.html">marko</a> (there is a javascript implementation with the same name) to parse the markdown and generate the HTML.</p>
+<p>In obsidian, I link the files using the usual markdown syntax and during the HTML generation I need to convert these links to HTML hyperlinks. That works out-of-box in marko but links contain addresses to markdown files (without the <code>.md</code> extension) and I need append there the <code>.html</code> extension.</p>
+<h2>Marko extensions</h2>
+<p>Marko allows to extend its behaviour using extensions. Extensions can be provided in the constructor of the <code>Markdown</code> class. Let's call our extension <code>LinkExtension</code>.</p>
+<pre><code class="language-python">class LinkExtension:
+    &quot;&quot;&quot;TODO&quot;&quot;&quot;
+
+markdown = Markdown(extensions=[LinkExtension])
+</code></pre>
+<p>The extension can specify list of <code>Element</code> classes that implement element parsing. Luckily, we're not introducing a new syntax and there is already existing <code>marko.inline.Link</code> class for that. </p>
+<pre><code class="language-python">from marko.inline import Link
+
+class LinkExtension:
+    elements = [Link]
+</code></pre>
+<p>Actually, we can completely ignore it and not specify it at all because the only thing we're going to modify is the rendering. We implement a render mixin class. We need to implement <code>render_link</code> method which is going to be used instead of the one from <code>marko.html_renderer.HTMLRenderer</code>. It accepts a single <code>element</code> object that contains <code>title</code> and <code>dest</code> properties parsed using the <code>Link</code> parser.</p>
+<p>I simply called the parent's <code>render_link</code> with an element modified so that the <code>dest</code> has <code>.html</code> extension. I decided to make a shallow copy of the <code>element</code> object, but it works correctly also when the element is mutated. But mutation is dangerous in general, so just in case...</p>
+<pre><code class="language-python">from copy import copy
+
+class LinkRendererMixin:
+    def render_link(self, element):
+        new_element = copy(element)
+        new_element.dest = f&quot;{new_element.dest}.html&quot;
+        return super().render_link(element)
+
+</code></pre>
+<p>The final extension is then a simple class specifying the renderer.</p>
+<pre><code class="language-python">class LinkExtension:
+    renderer_mixins = [LinkRendererMixin]
+</code></pre>
+<h2>Final result</h2>
+<pre><code class="language-python">from copy import copy
+
+from marko import Markdown
+
+class LinkRendererMixin:
+    def render_link(self, element):
+        new_element = copy(element)
+        new_element.dest = f&quot;{new_element.dest}.html&quot;
+        return super().render_link(new_element)
+
+class LinkExtension:
+    renderer_mixins = [LinkRendererMixin]
+
+def main():
+    markdown = Markdown(extensions=[LinkExtension])
+    example_text = &quot;Hello world with [link](files/another_one)&quot;
+    print(markdown.convert(example_text))
+
+if __name__ == &quot;__main__&quot;:
+    main()
+
+</code></pre>
+<p>which output is</p>
+<pre><code class="language-html">&lt;p&gt;Hello world with &lt;a href=&quot;files/another_one.html&quot;&gt;link&lt;/a&gt;.&lt;/p&gt;
+</code></pre>
+
+    </div>
+    <footer>
+      This website was generated from <a href="https://obsidian.md/">obsidian</a> by a custom generator.
+    </footer>
+  </body>
+</html>

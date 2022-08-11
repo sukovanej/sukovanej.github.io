@@ -1,0 +1,102 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="/static/normalize.css" />
+    <link rel="stylesheet" href="/static/style.css" />
+    <link rel="stylesheet" href="/static/github.min.css">
+    <meta charset="utf-8">
+    <script src="/static/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Type-safe `|` pipe operator in Python</title>
+  </head>
+  <body>
+    <div class="content">
+      <div class="content-title">
+        <h1>Type-safe <code>|</code> pipe operator in Python</h1>
+        <span class="go-home-btn"><a href="/">&#127968; Go home</a></span>
+      </div>
+      <div class="header">
+  <span class="header-tags"><span class="header-tag">Typescript</span>
+<span class="header-tag">Typing</span>
+<span class="header-tag">Functional programming</span>
+</span>
+  <span class="header-created-at">2022-08-11</span>
+</div>
+<p>During a pair programming we found out it is pretty easy to implement the <code>|</code> operator in Python. In the <a href="blog/posts/2022/08-august/2022-08-10.html">previous post</a>, I implemented a function that can transform an input value using a sequence of functions. Using operator overriding, we can do the same using a fancy pipe operator syntax.</p>
+<p>With the current implementation I have, I can do something like this.</p>
+<pre><code class="language-python">add_1: Fn[int, int] = lambda x: x + 1
+multiply_by: Fn[int, Fn[int, int]] = lambda y: lambda x: x * y
+
+# + assume all the replicate, fmap and flatten exist in the module A
+
+result = (
+    start_pipe(1)
+    | A.replicate(3)
+    | A.fmap(add_1)
+    | A.replicate(2)
+    | A.flatten
+    | A.fmap(multiply_by(2))
+    | end_pipe
+)
+assert result == [4, 4, 4, 4, 4, 4]
+</code></pre>
+<p>The function <code>start_pipe</code> converts a value of type <code>A</code> to a wrapper object <code>Pipeable[A]</code>. The trick is to override <code>__or__</code> method on the object and expect a <code>fn: Fn[A, B]</code> as an input argument. Every invocation of the <code>pipeable | fn</code> expression than creates a new <code>Pipeable</code> object. </p>
+<p>The result of <code>p(a) | fn1 | fn2 | fn3 ...</code> is always <code>Pipeable</code>. To actually evaluate the pipeable object, I introduced a secret class <code>_EndPipe</code> and a single instance <code>end_pipe: _EndPipe</code>. In the implementation of the <code>__or__</code> method I only need to check whether the instance of <code>_EndPipe</code> has been provided and if so the pipeable is evaluated instead and the result is returned. I created overloads for the <code>__or__</code> method to make it type-check and that's it!</p>
+<pre><code class="language-python">from __future__ import annotations
+
+from functools import reduce
+from typing import Any, Generic, TypeGuard, TypeVar, cast, overload
+
+from dogs.function import Fn
+
+A = TypeVar(&quot;A&quot;)
+B = TypeVar(&quot;B&quot;)
+
+class _EndPipe:
+    pass
+
+end_pipe = _EndPipe()
+
+class Pipeable(Generic[A]):
+    def __init__(self, a: A) -&gt; None:
+        self._a = a
+        self._fns: list[Fn[Any, Any]] = []
+
+    def __with_new_fn(self, fn: Fn[A, B]) -&gt; Pipeable[B]:
+        new_pipeable = Pipeable(self._a)
+        new_pipeable._fns = self._fns
+        new_pipeable._fns.append(fn)
+        return cast(Pipeable[B], new_pipeable)
+
+    @staticmethod
+    def __is_end_pipe(symbol: Any) -&gt; TypeGuard[_EndPipe]:
+        return isinstance(symbol, _EndPipe)
+
+    @overload
+    def __or__(self, fn: Fn[A, B]) -&gt; Pipeable[B]:
+        ...
+
+    @overload
+    def __or__(self, fn: _EndPipe) -&gt; A:
+        ...
+
+    def __or__(self, fn: Fn[A, B] | _EndPipe) -&gt; Pipeable[B] | A:
+        if self.__is_end_pipe(fn):
+            return self.eval()
+
+        return self.__with_new_fn(cast(Fn[A, B], fn))
+
+    def eval(self) -&gt; A:
+        return reduce(lambda acc, fn: fn(acc), self._fns, self._a)
+
+
+def start_pipe(a: A) -&gt; Pipeable[A]:
+    return Pipeable(a)
+</code></pre>
+
+    </div>
+    <footer>
+      This website was generated from <a href="https://obsidian.md/">obsidian</a> by a custom generator.
+    </footer>
+  </body>
+</html>
