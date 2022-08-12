@@ -1,0 +1,83 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="/static/normalize.css" />
+    <link rel="stylesheet" href="/static/style.css" />
+    <link rel="stylesheet" href="/static/github.min.css">
+    <meta charset="utf-8">
+    <script src="/static/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Branded types in Typescript</title>
+  </head>
+  <body>
+    <div class="content">
+      <div class="content-title">
+        <h1>Branded types in Typescript</h1>
+        <span class="go-home-btn"><a href="/">&#127968; Go home</a></span>
+      </div>
+      <div class="header">
+  <span class="header-tags"><span class="header-tag">Typescript</span>
+<span class="header-tag">Typing</span>
+</span>
+  <span class="header-created-at">2022-08-12</span>
+</div>
+<p>Sometimes, we'd like to introduce a new type based on an existing one in a way that we don't actually add a new information to it. For example, if we deal with currencies, we might introduce new types</p>
+<pre><code class="language-typescript">type EUR = number;
+type USD = number;
+</code></pre>
+<p>and have our functions nicely annotated like this.</p>
+<pre><code class="language-typescript">const usdToEur = (eur: EUR): USD =&gt; undefined;
+</code></pre>
+<p>The problem is we can do something as follows.</p>
+<pre><code class="language-typescript">declare const getMoneyInEur: () =&gt; EUR;
+
+const moneyUSD: USD = getMoneyInEur();
+</code></pre>
+<p>The type-checker is happy about that because <code>USD</code> and <code>EUR</code> are effectively same types. But, we'd want the type-checker to find as much problems for us as possible. What we can do is to <em>tag</em> the <code>number</code> type so that <code>EUR</code> and <code>USD</code> are actually different from each other.</p>
+<pre><code class="language-typescript">type EUR = number &amp; { _tag: &#x27;EUR&#x27; };
+type USD = number &amp; { _tag: &#x27;USD&#x27; };
+</code></pre>
+<p>Now, the <code>moneyUSD</code> assignment won't compile, thus we made the code immune to such errors. </p>
+<pre><code class="language-typescript">const moneyUSD: USD = getMoneyInEur();
+</code></pre>
+<p>Now, there is an interesting problem which is sometimes a feature. If we had a type <code>DifferentUSD</code> defined the same way we defined the <code>USD</code>, the following code would type-check.</p>
+<pre><code class="language-typescript">type DifferentUSD = number &amp; { _tag: &#x27;USD&#x27; };
+
+declare const getMoneyInUsd: () =&gt; USD;
+
+const moneyUSD2: DifferentUSD = getMoneyInUsd();
+</code></pre>
+<p>This is due to Typescript's support of structural subtyping. It is actually pretty handy most of the time, but if we need to enforce our function takes or returns only our specific tagged type, we need to do better. And it turns out we can, using <strong>Symbols</strong>.</p>
+<h2>Javascript <code>Symbol</code></h2>
+<p>Symbols are pretty interesting feature of Javascript. They are objects created using <code>Symbol</code> constructor and they have an important property that every created symbol is equal only to itself. Let's see an example.</p>
+<pre><code class="language-javascript">const symbol1 = Symbol();
+const symbol2 = Symbol(&#x27;foo&#x27;);
+const symbol3 = Symbol(&#x27;foo&#x27;);
+
+symbol1 == symbol1 // true
+symbol1 == symbol2 // false
+symbol2 == symbol3 // false
+Symbol(&#x27;foo&#x27;) === Symbol(&#x27;foo&#x27;)  // false
+</code></pre>
+<h2>Branded types using <code>unique symbol</code></h2>
+<p>Funnily enough, we don't need <code>Symbols</code> per se. We only need their types and the property of uniqueness, but now in the type-level code.</p>
+<p><a href="https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-7.html.html">Typescript 2.7</a> added support for <code>unique symbol</code> type. The documentation states:</p>
+<p><em>Each reference to a <code>unique symbol</code> implies a completely unique identity that’s tied to a given declaration.</em></p>
+<p>Therefore if we create following types (the <code>_tag</code> must be <code>readonly</code>)</p>
+<pre><code class="language-typescript">type USD = number &amp; { readonly _tag: unique symbol };
+type DifferentUSD = number &amp; { readonly _tag: unique symbol };
+</code></pre>
+<p>and try to do the same mismatch of <code>USD</code> and <code>DifferentUSD</code>, we'll get an error this time.</p>
+<pre><code class="language-typescript">declare const getMoneyInUsd: () =&gt; USD;
+
+const moneyUSD: DifferentUSD = getMoneyInUsd(); // &lt;- doesn&#x27;t type-check
+</code></pre>
+<p>That's because <code>USD</code> and <code>DifferentUSD</code> are now not nominally nor structurally subtypes because the type of <code>_tag</code> in each of them has its own identity tied to the type declaration!</p>
+<p>Happy coding!</p>
+
+    </div>
+    <footer>
+      This website was generated from <a href="https://obsidian.md/">obsidian</a> by a custom generator.
+    </footer>
+  </body>
+</html>
