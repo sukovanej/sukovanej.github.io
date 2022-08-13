@@ -1,0 +1,185 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="/static/normalize.css" />
+    <link rel="stylesheet" href="/static/style.css" />
+    <link rel="stylesheet" href="/static/github.min.css">
+    <meta charset="utf-8">
+    <script src="/static/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chuck Norris jokes Haskell CLI app with `cabal`</title>
+  </head>
+  <body>
+    <div class="content">
+      <div class="content-title">
+        <h1>Chuck Norris jokes Haskell CLI app with <code>cabal</code></h1>
+        <span class="go-home-btn"><a href="/">&#127968; Go home</a></span>
+      </div>
+      <div class="header">
+  <span class="header-tags"><span class="header-tag">Haskell</span>
+<span class="header-tag">Cabal</span>
+</span>
+  <span class="header-created-at">2022-08-13</span>
+</div>
+<h2>TLDR</h2>
+<p>I'll show how to setup a Haskell project using cabal and how to use <code>http-client</code>, <code>http-client-tls</code>, <code>text</code> and <code>aeson</code> libraries. I'll build a small CLI haskell app that will call <a href="https://api.chucknorris.io/.html">HTTP API for Chuck Norris jokes</a> and print the formatted output to stdout.</p>
+<p>I use cabal <strong>3.8.1.0</strong>. The CLI interface for the previous <strong>3.6.2.0</strong> version differs so make sure you have the <strong>3.8.1.0</strong> version! You can install cabal using <a href="https://www.haskell.org/ghcup/.html">ghcup</a>. If you don't have the mentioned version, install it using <code>ghcup tui</code>.</p>
+<h2>Create a new app</h2>
+<pre><code class="language-bash">$ cabal init haskell-app -n
+</code></pre>
+<ul>
+<li>The <code>appname</code> is the directory or path where to put the project. Can be omitted and current directory is used in that case.</li>
+<li>The <code>-n</code> stands for <code>--non-interactive</code> and it means default settings will be used. If omitted</li>
+</ul>
+<p>We should see this directory structure in the <em>haskell-app</em> folder.</p>
+<pre><code class="language-bash">├── CHANGELOG.md
+├── app
+│   └── Main.hs
+└── haskell-app.cabal
+</code></pre>
+<p>In the <em>haskell-app.cabal</em>, we'll se we have a single <code>executable haskell-app</code>.</p>
+<h2>Run the app</h2>
+<p>We can build and run the app using</p>
+<pre><code class="language-bash">$ cabal run haskell-app
+# or just
+$ cabal run
+</code></pre>
+<p>We can also build the app and run it using two separate commands.</p>
+<pre><code class="language-bash">$ cabal build
+$ cabal run
+</code></pre>
+<h2>Adding a new local module</h2>
+<p>Let's create <code>app/ChuckNorrisApi.hs</code> with the following content.</p>
+<pre><code class="language-haskell">module ChuckNorrisApi where
+
+apiUrl :: String
+apiUrl = &quot;https://api.chucknorris.io/jokes/random&quot;
+</code></pre>
+<p>Now, we need to let cabal know we'll use other modules for the <code>executable haskell-app</code>.</p>
+<pre><code class="language-haskell">    other-modules:    ChuckNorrisApi
+</code></pre>
+<p>Update the <code>app/Main.hs</code> as follows.</p>
+<pre><code class="language-haskell">module Main where
+
+import ChuckNorrisApi (apiUrl)
+
+main :: IO ()
+main = putStrLn $ &quot;Hello, I&#x27;m gonna use &quot; &lt;&gt; apiUrl &lt;&gt; &quot; later!&quot;
+</code></pre>
+<p>And let's run the app.</p>
+<pre><code class="language-bash">$ cabal run
+# you&#x27;re gonna see some build logs there
+</code></pre>
+<pre><code class="language-text">Hello, I&#x27;m gonna use https://api.chucknorris.io/jokes/random later!
+</code></pre>
+<h2>Adding dependencies</h2>
+<p>Firstly, update the package index if you didn't do so for some time.</p>
+<pre><code class="language-bash">$ cabal update
+</code></pre>
+<p>We'll add a <a href="https://hackage.haskell.org/package/http-client.html">http-client</a> library dependency to our project.</p>
+<p>Extend the <code>build-depends</code> section in <code>executable haskell-app</code> in the <strong>haskell-app.cabal</strong> file.</p>
+<pre><code class="language-haskell">    build-depends:    base ^&gt;=4.14.3.0,
+                      http-client ^&gt;= 0.7.13.1
+</code></pre>
+<p>Run <code>cabal run</code> again to make cabal build the dependencies. We are going to need two more libraries. The <code>text</code> for unicode text types and <code>http-client-tls</code> for TLS support.</p>
+<pre><code class="language-haskell">    build-depends:    base ^&gt;=4.14.3.0,
+                      http-client ^&gt;= 0.7.13.1,
+                      http-client-tls ^&gt;= 0.3.6.1,
+                      text ^&gt;= 1.2.5
+</code></pre>
+<h2>Using <code>http-client</code> and <code>http-client-tls</code></h2>
+<p>I can't really go into details of how the <code>http-client</code> works because I don't know the details :(. The important point here is the library uses a <a href="https://hackage.haskell.org/package/http-client-0.7.13.1/docs/Network-HTTP-Client.html#g:3.html">Manager</a> structure to keep track of connections and we're using the <code>tlsManagerSettings</code> from <code>http-client-tls</code> the create the manager with an ability to perform https calls.</p>
+<p>The <code>parseRequest</code> function creates a <a href="https://hackage.haskell.org/package/http-client-0.7.13.1/docs/Network-HTTP-Client.html#t:Request.html">Request</a> object from a <code>String</code> which is the URL. <a href="https://hackage.haskell.org/package/http-client-0.7.13.1/docs/Network-HTTP-Client.html#v:httpLbs.html">httpLbs</a> takes the <code>Request</code> and <code>Manager</code> and returns <code>IO (Response ByteString)</code>. Note that the ByteString is <code>Lazy</code> which is the reason we use <a href="https://hackage.haskell.org/package/text-1.2.5.0/docs/Data-Text-Lazy.html.html">Data.Text.Lazy</a> and <a href="https://hackage.haskell.org/package/text-1.2.5.0/docs/Data-Text-Lazy-Encoding.html.html">Data.Text.Lazy.Encoding</a>. </p>
+<pre><code class="language-haskell">module ChuckNorrisApi where
+
+import Network.HTTP.Client.TLS (tlsManagerSettings)
+import qualified Network.HTTP.Client as HttpClient
+import qualified Data.Text.Lazy as T
+import qualified Data.Text.Lazy.Encoding as TE
+
+apiUrl :: String
+apiUrl = &quot;https://api.chucknorris.io/jokes/random&quot;
+
+getRandomChuckNorrisJoke :: IO T.Text
+getRandomChuckNorrisJoke = do
+    manager &lt;- HttpClient.newManager tlsManagerSettings
+    request &lt;- HttpClient.parseRequest apiUrl
+    response &lt;- HttpClient.httpLbs request manager
+    return $ TE.decodeUtf8 (HttpClient.responseBody response)
+</code></pre>
+<p>In the main function, we'll simply print the output of the API.</p>
+<pre><code class="language-haskell">module Main where
+
+import ChuckNorrisApi (getRandomChuckNorrisJoke)
+
+main :: IO ()
+main = getRandomChuckNorrisJoke &gt;&gt;= print
+</code></pre>
+<p>Let's run it!</p>
+<pre><code class="language-bash">cabal run
+</code></pre>
+<pre><code>&quot;{\&quot;categories\&quot;:[],\&quot;created_at\&quot;:\&quot;2020-01-05 13:42:26.447675\&quot;,\&quot;icon_url\&quot;:\&quot;https://assets.chucknorris.host/img/avatar/chuck-norris.png\&quot;,\&quot;id\&quot;:\&quot;gZGSnZbITBagu3fPgIkDLg\&quot;,\&quot;updated_at\&quot;:\&quot;2020-01-05 13:42:26.447675\&quot;,\&quot;url\&quot;:\&quot;https://api.chucknorris.io/jokes/gZGSnZbITBagu3fPgIkDLg\&quot;,\&quot;value\&quot;:\&quot;Chuck Norris has lasted this long simply because Heaven wants nothing to do with him, and Hell is afraid that he&#x27;ll take over the place.\&quot;}&quot;
+</code></pre>
+<h2>Parsing JSON with the <code>aeson</code> library</h2>
+<p>Haskell has the awesome <a href="https://hackage.haskell.org/package/aeson.html">aeson library</a>. It is used to parse a <code>ByteString</code> containing a JSON. It allows us to very easily implement <code>ToJSON</code> and <code>FromJSON</code> for pure haskell data structures and <code>decode</code> input byte strings into <code>Maybe</code>. Let's first add the library to our build dependencies.</p>
+<pre><code class="language-haskell">    build-depends:    base ^&gt;=4.14.3.0,
+                      http-client ^&gt;= 0.7.13.1,
+                      http-client-tls ^&gt;= 0.3.6.1,
+                      text ^&gt;= 1.2.5,
+                      aeson ^&gt;= 2.1.0.0
+</code></pre>
+<p>Then, we'll define <code>ChuckNorrisJoke</code> structure we'll let the Haskell magic automatically generate <code>ToJSON</code> and <code>FromJSON</code> instances. At the end, we'll replace the <code>Text</code> decode with aeson's <code>decode</code>. We also need to change the signature of the whole function to <code>IO (Maybe ChuckNorrisJoke)</code> because the parsing might fail.</p>
+<pre><code class="language-haskell">{-# LANGUAGE DeriveGeneric #-}
+
+module ChuckNorrisApi where
+
+import GHC.Generics
+
+import Network.HTTP.Client.TLS (tlsManagerSettings)
+import qualified Network.HTTP.Client as HttpClient
+import qualified Data.Text.Lazy as T
+import Data.Aeson (ToJSON, FromJSON, decode)
+
+data ChuckNorrisJoke = ChuckNorrisJoke { url :: T.Text, value :: T.Text } deriving (Generic, Show)
+
+instance ToJSON ChuckNorrisJoke
+instance FromJSON ChuckNorrisJoke
+
+apiUrl :: String
+apiUrl = &quot;https://api.chucknorris.io/jokes/random&quot;
+
+getRandomChuckNorrisJoke :: IO (Maybe ChuckNorrisJoke)
+getRandomChuckNorrisJoke = do
+    manager &lt;- HttpClient.newManager tlsManagerSettings
+    request &lt;- HttpClient.parseRequest apiUrl
+    response &lt;- HttpClient.httpLbs request manager
+    return $ decode (HttpClient.responseBody response)
+
+</code></pre>
+<p>In the main module, we'll transform the output of the API to <code>T.Text</code> and print it to stdout using <code>putStrLn</code> function. I also add <code>OverloadedStrings</code> extension to simplify working with Text literals.</p>
+<pre><code class="language-haskell">{-# LANGUAGE OverloadedStrings #-}
+
+module Main where
+
+import ChuckNorrisApi (getRandomChuckNorrisJoke, ChuckNorrisJoke(..))
+import qualified Data.Text.Lazy as T
+
+chuckNorrisJokeToOutput :: Maybe ChuckNorrisJoke -&gt; T.Text
+chuckNorrisJokeToOutput Nothing = &quot;Something&#x27;s wrong :(&quot;
+chuckNorrisJokeToOutput (Just ChuckNorrisJoke{url=_url, value=_value}) = _value &lt;&gt; &quot;\n\nURL: &quot; &lt;&gt; _url
+
+main :: IO ()
+main = getRandomChuckNorrisJoke &gt;&gt;= putStr . T.unpack . chuckNorrisJokeToOutput
+</code></pre>
+<p>Triggering the <code>cabal run</code> now will result in a nice readable result.</p>
+<pre><code class="language-text">Chuck Norris is known to save people&#x27;s lives from heart attacks - so that he can kill them himself.
+
+URL: https://api.chucknorris.io/jokes/kZBeKZmjQ_GBRgYuE-j2hg⏎
+</code></pre>
+
+    </div>
+    <footer>
+      This website was generated from <a href="https://obsidian.md/">obsidian</a> by a custom generator.
+    </footer>
+  </body>
+</html>

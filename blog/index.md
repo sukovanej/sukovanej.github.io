@@ -4,6 +4,7 @@ render_header: False
 ---
 ## Posts
 
+- [2022-08-13 - Chuck Norris jokes Haskell CLI app with `cabal`](blog/posts/2022/08-august/2022-08-13)
 - [2022-08-12 - Branded types in Typescript](blog/posts/2022/08-august/2022-08-12)
 - [2022-08-11 - Type-safe `|` pipe operator in Python](blog/posts/2022/08-august/2022-08-11)
 - [2022-08-10 - Type-safe `pipe` function implementation in Python](blog/posts/2022/08-august/2022-08-10)
