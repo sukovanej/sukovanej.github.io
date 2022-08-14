@@ -1,0 +1,101 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="/static/normalize.css" />
+    <link rel="stylesheet" href="/static/style.css" />
+    <link rel="stylesheet" href="/static/github.min.css">
+    <meta charset="utf-8">
+    <script src="/static/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Haskell `conduit` example app</title>
+  </head>
+  <body>
+    <div class="content">
+      <div class="content-title">
+        <h1>Haskell <code>conduit</code> example app</h1>
+        <span class="go-home-btn"><a href="/">&#127968; Go home</a></span>
+      </div>
+      <div class="header">
+  <span class="header-tags"><span class="header-tag">Haskell</span>
+<span class="header-tag">Streaming</span>
+</span>
+  <span class="header-created-at">2022-08-14</span>
+</div>
+<p>I was playing around with the <a href="https://github.com/snoyberg/conduit#readme.html">conduit</a> streaming Haskell library. I wanted to create an example app which would stream a file containing numbers separated by a new line, it would do a mapping on each number (in my example I just double it, the actual arithmetic operation isn't important) and stream the result to an output file. The point is the whole program should be constant in memory even tho I process a file containing 1 million numbers.</p>
+<p>For an introduction I recommend <a href="https://www.youtube.com/watch?v=9957qVltU00.html">this talk</a> by Michael Snoyman who is the author of the library.</p>
+<h2>The pipeline</h2>
+<p>The streaming pipeline itself is pretty simple. </p>
+<ul>
+<li>We need to stream a file (using <a href="https://hackage.haskell.org/package/conduit-1.3.4.1/docs/Data-Conduit-Combinators.html#v:sourceFile.html">sourceFile</a>) as <code>ByteString</code>.</li>
+<li>We aggregate each line (using <a href="https://hackage.haskell.org/package/conduit-1.3.4.1/docs/Data-Conduit-Combinators.html#v:linesUnboundedAscii.html">linesUnboundedAscii</a>).</li>
+<li>In the downstream, convert the <code>ByteString</code> to <code>Int</code> (it is actually unsafe because I'm using the prelude's <a href="https://hackage.haskell.org/package/base-4.17.0.0/docs/Prelude.html#v:read.html">read</a> function, don't do that in a production app!).</li>
+<li>Finally, the very next downstream does the arithmetic transformation and the result gets converted from <code>Int</code> back to the <code>ByteString</code>.</li>
+<li>The output is streamed to the output file (using <a href="https://hackage.haskell.org/package/conduit-1.3.4.1/docs/Data-Conduit-Combinators.html#v:sinkFile.html">sinkFile</a>).</li>
+</ul>
+<h2>Generate input file</h2>
+<pre><code class="language-bash">python -c &#x27;print(&quot;\n&quot;.join(list(map(str, range(0, 1_000_000)))))&#x27; &gt; input-data.txt
+</code></pre>
+<h2>The final program</h2>
+<p>We need <code>conduit</code>, <code>bytestring</code> and <code>text</code> dependencies.</p>
+<pre><code class="language-haskell">executable haskell-conduit-example
+    import:           warnings
+    main-is:          Main.hs
+    build-depends:    base ^&gt;=4.14.3.0,
+                      conduit ^&gt;=1.3.4.2,
+                      bytestring ^&gt;=0.11.3.1,
+                      text ^&gt;=1.2.5
+    hs-source-dirs:   app
+    default-language: Haskell2010
+</code></pre>
+<p>The final example app can look something like this.</p>
+<pre><code class="language-haskell">{-# LANGUAGE OverloadedStrings #-}
+
+module Main where
+
+import Conduit
+import qualified Data.Conduit.Combinators as CC
+import qualified Data.ByteString as BS
+import Data.Text                  as T
+import Data.Text.Encoding         as T
+
+byteStringToInt :: BS.ByteString -&gt; Int
+byteStringToInt = read . T.unpack . T.decodeUtf8
+
+intToByteString :: Int -&gt; BS.ByteString
+intToByteString = T.encodeUtf8 . T.pack . show
+
+main :: IO ()
+main = runConduitRes $
+  sourceFile &quot;input-data.txt&quot;
+  .| CC.linesUnboundedAscii
+  .| mapC byteStringToInt
+  .| mapC (* 2)
+  .| mapC ((&lt;&gt; &quot;\n&quot;) . intToByteString)
+  .| sinkFile &quot;output-data.txt&quot;
+</code></pre>
+<div id="disqus_thread"></div>
+<script>
+    /**
+    *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+    *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables    */
+    /*
+    var disqus_config = function () {
+    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+    */
+    (function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = 'https://sukovanej-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+    </div>
+    <footer>
+      This website was generated from <a href="https://obsidian.md/">obsidian</a> by a custom generator.
+    </footer>
+  </body>
+</html>
