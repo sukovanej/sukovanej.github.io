@@ -21,6 +21,7 @@ class ParsedFile(BaseModel):
     file_name: Path
     page_header: str
     render_header: bool = True
+    enable_comments: bool = True
 
 
 class ParsedHtml(ParsedFile):

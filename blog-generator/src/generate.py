@@ -12,6 +12,7 @@ class Template(BaseModel):
     tag: str
     header: str
     main: str
+    comments: str
 
 
 def get_linkable_files(base_path: Path, parsed_links: ParsedLinks) -> ParsedLinks:
@@ -46,9 +47,17 @@ def _render_header_html(template: Template, parsed_html: ParsedHtml) -> str:
     return header_html
 
 
+def _render_comments_html(template: Template, parsed_html: ParsedHtml) -> str:
+    if not parsed_html.enable_comments:
+        return ""
+
+    return template.comments
+
+
 def _render_html(template: Template, parsed_html: ParsedHtml) -> str:
     header_html = _render_header_html(template, parsed_html)
-    content_html = f"{header_html}{parsed_html.html}"
+    comments_html = _render_comments_html(template, parsed_html)
+    content_html = f"{header_html}{parsed_html.html}{comments_html}"
     main_html = template.main.format(
         content=content_html,
         title=parsed_html.title,
@@ -90,12 +99,19 @@ def create_template(template_path: Path) -> Template:
     main_template_path = template_path / "main_template.html"
     header_template_path = template_path / "header_template.html"
     tag_template_path = template_path / "tag_template.html"
+    comments_template_path = template_path / "comments_template.html"
 
     main_template = main_template_path.read_text()
     header_template = header_template_path.read_text()
     tag_template = tag_template_path.read_text()
+    comments_template = comments_template_path.read_text()
 
-    return Template(main=main_template, tag=tag_template, header=header_template)
+    return Template(
+        main=main_template,
+        tag=tag_template,
+        header=header_template,
+        comments=comments_template,
+    )
 
 
 def main() -> None:
