@@ -13,6 +13,10 @@ from pydantic import BaseModel
 ParsedLinks = list[str]
 
 
+def is_external_url(url: str):
+    return url.startswith('https://') or url.startswith('http://')
+
+
 class ParsedFile(BaseModel):
     content: str
     title: str
@@ -35,6 +39,9 @@ class ParsedHtml(ParsedFile):
 def create_renderer(parsed_links: ParsedLinks) -> type[html_renderer.HTMLRenderer]:
     class LinkRendererMixin(html_renderer.HTMLRenderer):
         def render_link(self, element: inline.Link) -> str:
+            if is_external_url(element.dest):
+                return super().render_link(element)
+
             parsed_links.append(element.dest)
 
             new_element = copy(element)

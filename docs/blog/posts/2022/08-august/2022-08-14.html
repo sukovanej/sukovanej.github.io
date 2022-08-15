@@ -21,16 +21,16 @@
 </span>
   <span class="header-created-at">2022-08-14</span>
 </div>
-<p>I was playing around with the <a href="https://github.com/snoyberg/conduit#readme.html">conduit</a> streaming Haskell library. I wanted to create an example app which would stream a file containing numbers separated by a new line, it would do a mapping on each number (in my example I just double it, the actual arithmetic operation isn't important) and stream the result to an output file. The point is the whole program should be constant in memory even tho I process a file containing 1 million numbers.</p>
-<p>For an introduction I recommend <a href="https://www.youtube.com/watch?v=9957qVltU00.html">this talk</a> by Michael Snoyman who is the author of the library.</p>
+<p>I was playing around with the <a href="https://github.com/snoyberg/conduit#readme">conduit</a> streaming Haskell library. I wanted to create an example app which would stream a file containing numbers separated by a new line, it would do a mapping on each number (in my example I just double it, the actual arithmetic operation isn't important) and stream the result to an output file. The point is the whole program should be constant in memory even tho I process a file containing 1 million numbers.</p>
+<p>For an introduction I recommend <a href="https://www.youtube.com/watch?v=9957qVltU00">this talk</a> by Michael Snoyman who is the author of the library.</p>
 <h2>The pipeline</h2>
 <p>The streaming pipeline itself is pretty simple. </p>
 <ul>
-<li>We need to stream a file (using <a href="https://hackage.haskell.org/package/conduit-1.3.4.1/docs/Data-Conduit-Combinators.html#v:sourceFile.html">sourceFile</a>) as <code>ByteString</code>.</li>
-<li>We aggregate each line (using <a href="https://hackage.haskell.org/package/conduit-1.3.4.1/docs/Data-Conduit-Combinators.html#v:linesUnboundedAscii.html">linesUnboundedAscii</a>).</li>
-<li>In the downstream, convert the <code>ByteString</code> to <code>Int</code> (it is actually unsafe because I'm using the prelude's <a href="https://hackage.haskell.org/package/base-4.17.0.0/docs/Prelude.html#v:read.html">read</a> function, don't do that in a production app!).</li>
+<li>We need to stream a file (using <a href="https://hackage.haskell.org/package/conduit-1.3.4.1/docs/Data-Conduit-Combinators.html#v:sourceFile">sourceFile</a>) as <code>ByteString</code>.</li>
+<li>We aggregate each line (using <a href="https://hackage.haskell.org/package/conduit-1.3.4.1/docs/Data-Conduit-Combinators.html#v:linesUnboundedAscii">linesUnboundedAscii</a>).</li>
+<li>In the downstream, convert the <code>ByteString</code> to <code>Int</code> (it is actually unsafe because I'm using the prelude's <a href="https://hackage.haskell.org/package/base-4.17.0.0/docs/Prelude.html#v:read">read</a> function, don't do that in a production app!).</li>
 <li>Finally, the very next downstream does the arithmetic transformation and the result gets converted from <code>Int</code> back to the <code>ByteString</code>.</li>
-<li>The output is streamed to the output file (using <a href="https://hackage.haskell.org/package/conduit-1.3.4.1/docs/Data-Conduit-Combinators.html#v:sinkFile.html">sinkFile</a>).</li>
+<li>The output is streamed to the output file (using <a href="https://hackage.haskell.org/package/conduit-1.3.4.1/docs/Data-Conduit-Combinators.html#v:sinkFile">sinkFile</a>).</li>
 </ul>
 <h2>Generate input file</h2>
 <pre><code class="language-bash">python -c &#x27;print(&quot;\n&quot;.join(list(map(str, range(0, 1_000_000)))))&#x27; &gt; input-data.txt

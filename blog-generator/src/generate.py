@@ -5,7 +5,7 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-from .parser import ParsedHtml, ParsedLinks, parse_markdown
+from .parser import ParsedHtml, ParsedLinks, parse_markdown, is_external_url
 
 
 class Template(BaseModel):
@@ -19,12 +19,11 @@ def get_linkable_files(base_path: Path, parsed_links: ParsedLinks) -> ParsedLink
     linkable_files: ParsedLinks = []
 
     for parsed_link in parsed_links:
-        parsed_path = Path(parsed_link)
-
-        if parsed_link.startswith("https://"):
-            print(f"Skipping {parsed_path}")
+        if is_external_url(parsed_link):
+            print(f"Skipping {parsed_link}")
             continue
 
+        parsed_path = Path(parsed_link)
         absolute_parsed_path = base_path / parsed_path.with_suffix(".md")
 
         if not absolute_parsed_path.exists():

@@ -61,7 +61,7 @@ Symbol(&#x27;foo&#x27;) === Symbol(&#x27;foo&#x27;)  // false
 </code></pre>
 <h2>Branded types using <code>unique symbol</code></h2>
 <p>Funnily enough, we don't need <code>Symbols</code> per se. We only need their types and the property of uniqueness, but now in the type-level code.</p>
-<p><a href="https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-7.html.html">Typescript 2.7</a> added support for <code>unique symbol</code> type. The documentation states:</p>
+<p><a href="https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-7.html">Typescript 2.7</a> added support for <code>unique symbol</code> type. The documentation states:</p>
 <p><em>Each reference to a <code>unique symbol</code> implies a completely unique identity that’s tied to a given declaration.</em></p>
 <p>Therefore if we create following types (the <code>_tag</code> must be <code>readonly</code>)</p>
 <pre><code class="language-typescript">type USD = number &amp; { readonly _tag: unique symbol };

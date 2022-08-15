@@ -22,8 +22,8 @@
   <span class="header-created-at">2022-08-13</span>
 </div>
 <h2>TLDR</h2>
-<p>I'll show how to setup a Haskell project using cabal and how to use <code>http-client</code>, <code>http-client-tls</code>, <code>text</code> and <code>aeson</code> libraries. I'll build a small CLI haskell app that will call <a href="https://api.chucknorris.io/.html">HTTP API for Chuck Norris jokes</a> and print the formatted output to stdout.</p>
-<p>I use cabal <strong>3.8.1.0</strong>. The CLI interface for the previous <strong>3.6.2.0</strong> version differs so make sure you have the <strong>3.8.1.0</strong> version! You can install cabal using <a href="https://www.haskell.org/ghcup/.html">ghcup</a>. If you don't have the mentioned version, install it using <code>ghcup tui</code>.</p>
+<p>I'll show how to setup a Haskell project using cabal and how to use <code>http-client</code>, <code>http-client-tls</code>, <code>text</code> and <code>aeson</code> libraries. I'll build a small CLI haskell app that will call <a href="https://api.chucknorris.io/">HTTP API for Chuck Norris jokes</a> and print the formatted output to stdout.</p>
+<p>I use cabal <strong>3.8.1.0</strong>. The CLI interface for the previous <strong>3.6.2.0</strong> version differs so make sure you have the <strong>3.8.1.0</strong> version! You can install cabal using <a href="https://www.haskell.org/ghcup/">ghcup</a>. If you don't have the mentioned version, install it using <code>ghcup tui</code>.</p>
 <h2>Create a new app</h2>
 <pre><code class="language-bash">$ cabal init haskell-app -n
 </code></pre>
@@ -76,7 +76,7 @@ main = putStrLn $ &quot;Hello, I&#x27;m gonna use &quot; &lt;&gt; apiUrl &lt;&gt
 <p>Firstly, update the package index if you didn't do so for some time.</p>
 <pre><code class="language-bash">$ cabal update
 </code></pre>
-<p>We'll add a <a href="https://hackage.haskell.org/package/http-client.html">http-client</a> library dependency to our project.</p>
+<p>We'll add a <a href="https://hackage.haskell.org/package/http-client">http-client</a> library dependency to our project.</p>
 <p>Extend the <code>build-depends</code> section in <code>executable haskell-app</code> in the <strong>haskell-app.cabal</strong> file.</p>
 <pre><code class="language-haskell">    build-depends:    base ^&gt;=4.14.3.0,
                       http-client ^&gt;= 0.7.13.1
@@ -88,8 +88,8 @@ main = putStrLn $ &quot;Hello, I&#x27;m gonna use &quot; &lt;&gt; apiUrl &lt;&gt
                       text ^&gt;= 1.2.5
 </code></pre>
 <h2>Using <code>http-client</code> and <code>http-client-tls</code></h2>
-<p>I can't really go into details of how the <code>http-client</code> works because I don't know the details :(. The important point here is the library uses a <a href="https://hackage.haskell.org/package/http-client-0.7.13.1/docs/Network-HTTP-Client.html#g:3.html">Manager</a> structure to keep track of connections and we're using the <code>tlsManagerSettings</code> from <code>http-client-tls</code> the create the manager with an ability to perform https calls.</p>
-<p>The <code>parseRequest</code> function creates a <a href="https://hackage.haskell.org/package/http-client-0.7.13.1/docs/Network-HTTP-Client.html#t:Request.html">Request</a> object from a <code>String</code> which is the URL. <a href="https://hackage.haskell.org/package/http-client-0.7.13.1/docs/Network-HTTP-Client.html#v:httpLbs.html">httpLbs</a> takes the <code>Request</code> and <code>Manager</code> and returns <code>IO (Response ByteString)</code>. Note that the ByteString is <code>Lazy</code> which is the reason we use <a href="https://hackage.haskell.org/package/text-1.2.5.0/docs/Data-Text-Lazy.html.html">Data.Text.Lazy</a> and <a href="https://hackage.haskell.org/package/text-1.2.5.0/docs/Data-Text-Lazy-Encoding.html.html">Data.Text.Lazy.Encoding</a>. </p>
+<p>I can't really go into details of how the <code>http-client</code> works because I don't know the details :(. The important point here is the library uses a <a href="https://hackage.haskell.org/package/http-client-0.7.13.1/docs/Network-HTTP-Client.html#g:3">Manager</a> structure to keep track of connections and we're using the <code>tlsManagerSettings</code> from <code>http-client-tls</code> the create the manager with an ability to perform https calls.</p>
+<p>The <code>parseRequest</code> function creates a <a href="https://hackage.haskell.org/package/http-client-0.7.13.1/docs/Network-HTTP-Client.html#t:Request">Request</a> object from a <code>String</code> which is the URL. <a href="https://hackage.haskell.org/package/http-client-0.7.13.1/docs/Network-HTTP-Client.html#v:httpLbs">httpLbs</a> takes the <code>Request</code> and <code>Manager</code> and returns <code>IO (Response ByteString)</code>. Note that the ByteString is <code>Lazy</code> which is the reason we use <a href="https://hackage.haskell.org/package/text-1.2.5.0/docs/Data-Text-Lazy.html">Data.Text.Lazy</a> and <a href="https://hackage.haskell.org/package/text-1.2.5.0/docs/Data-Text-Lazy-Encoding.html">Data.Text.Lazy.Encoding</a>. </p>
 <pre><code class="language-haskell">module ChuckNorrisApi where
 
 import Network.HTTP.Client.TLS (tlsManagerSettings)
@@ -121,7 +121,7 @@ main = getRandomChuckNorrisJoke &gt;&gt;= print
 <pre><code>&quot;{\&quot;categories\&quot;:[],\&quot;created_at\&quot;:\&quot;2020-01-05 13:42:26.447675\&quot;,\&quot;icon_url\&quot;:\&quot;https://assets.chucknorris.host/img/avatar/chuck-norris.png\&quot;,\&quot;id\&quot;:\&quot;gZGSnZbITBagu3fPgIkDLg\&quot;,\&quot;updated_at\&quot;:\&quot;2020-01-05 13:42:26.447675\&quot;,\&quot;url\&quot;:\&quot;https://api.chucknorris.io/jokes/gZGSnZbITBagu3fPgIkDLg\&quot;,\&quot;value\&quot;:\&quot;Chuck Norris has lasted this long simply because Heaven wants nothing to do with him, and Hell is afraid that he&#x27;ll take over the place.\&quot;}&quot;
 </code></pre>
 <h2>Parsing JSON with the <code>aeson</code> library</h2>
-<p>Haskell has the awesome <a href="https://hackage.haskell.org/package/aeson.html">aeson library</a>. It is used to parse a <code>ByteString</code> containing a JSON. It allows us to very easily implement <code>ToJSON</code> and <code>FromJSON</code> for pure haskell data structures and <code>decode</code> input byte strings into <code>Maybe</code>. Let's first add the library to our build dependencies.</p>
+<p>Haskell has the awesome <a href="https://hackage.haskell.org/package/aeson">aeson library</a>. It is used to parse a <code>ByteString</code> containing a JSON. It allows us to very easily implement <code>ToJSON</code> and <code>FromJSON</code> for pure haskell data structures and <code>decode</code> input byte strings into <code>Maybe</code>. Let's first add the library to our build dependencies.</p>
 <pre><code class="language-haskell">    build-depends:    base ^&gt;=4.14.3.0,
                       http-client ^&gt;= 0.7.13.1,
                       http-client-tls ^&gt;= 0.3.6.1,
