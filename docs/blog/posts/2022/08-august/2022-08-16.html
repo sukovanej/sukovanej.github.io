@@ -1,0 +1,141 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="/static/normalize.css" />
+    <link rel="stylesheet" href="/static/style.css" />
+    <link rel="stylesheet" href="/static/github.min.css">
+    <meta charset="utf-8">
+    <script src="/static/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phantom types in Typescript</title>
+  </head>
+  <body>
+    <div class="content">
+      <div class="content-title">
+        <h1>Phantom types in Typescript</h1>
+        <span class="go-home-btn"><a href="/">&#127968; Go home</a></span>
+      </div>
+      <div class="header">
+  <span class="header-tags"><span class="header-tag">Typescript</span>
+</span>
+  <span class="header-created-at">2022-08-16</span>
+</div>
+<p>Phantom type is a type parameter (type variable in generic types) which is not used in the type declaration. For example:</p>
+<pre><code class="language-typescript">type InputValue&lt;A&gt; = { value: string };
+</code></pre>
+<p>The parameter <code>A</code> must be provided to construct a type from <code>InputValue</code> type constructor but it is not used anywhere on the right-hand side of the type declaration. Is that even useful then? Meh, it's pretty close to be useful. The problem is that during type checking, Typescript will evaluate <code>InputValue&lt;X&gt;</code> and <code>InputValue&lt;Y&gt;</code> (for arbitrary types <code>X</code> and <code>Y</code>) are the same types because the <code>A</code> doesn't structurally change the type. To solve that we can actually add the type parameter to the declaration of the type <code>InputValue</code>.</p>
+<pre><code class="language-typescript">type InputValue&lt;A&gt; = { readonly _A: A, value: string };
+</code></pre>
+<p>With this definition, <code>InputValue&lt;A&gt;</code> a <code>InputValue&lt;B&gt;</code> are in general different types for the type checker. The type parameter <code>A</code> is not really phantom in that case because it's being used on the right-hand side. But the intention is to never access the <code>_A</code> property and only use it for type-checking purpose. Let's see an example how to use that in practice.</p>
+<p>Let's say we are modelling a type for database client.</p>
+<pre><code class="language-typescript">type Result = unknown;
+
+type WhateverUnderlayingDatabaseLibrary = {
+  connect: () =&gt; Promise&lt;void&gt;;
+  query: (sql: string) =&gt; Promise&lt;Result&gt;;
+}
+
+type DatabaseClient&lt;S&gt; = { readonly _S: S, readonly client: WhateverUnderlayingDatabaseLibrary };
+</code></pre>
+<p>If the client encapsulates a null-pool database connection it can be in three states.</p>
+<ul>
+<li><em>opened</em></li>
+<li><em>opened in transaction</em></li>
+<li><em>closed</em></li>
+</ul>
+<p>Let's model these states.</p>
+<pre><code class="language-typescript">type Closed = { readonly ConnectionNotOpened: unique symbol };
+type Opened = { readonly ConnectionNotOpened: unique symbol };
+type InTransaction = { readonly ConnectionNotOpened: unique symbol };
+</code></pre>
+<p><code>Closed</code>, <code>Opened</code> and <code>InTransactino</code> are not intended to be instantiated in the term-level code. They are there just for the purpose of type-level enumeration for the <code>S</code> type parameter of the <code>DatabaseClient&lt;S&gt;</code> type.</p>
+<p>Now, we will create low-level functions operating on the <code>DatabaseConnection</code>. These functions can change the client's state but these changes will be tracked in the <code>S</code> type variable.</p>
+<h2><code>connect</code></h2>
+<p>The <code>connect</code> function takes a <code>DatabaseClient&lt;Closed&gt;</code> and returns <code>DatabaseClient&lt;Opened&gt;</code> (in reality, it might raise an error as well but let's pretend it always succeeds). The problem is we need to return a db instance converted into <code>DatabaseClient&lt;Opened&gt;</code> on the type level. For that, we will create a simple utility function which only purpose is changing the type variable <code>S</code>.</p>
+<pre><code class="language-typescript">const unsafeConvert = 
+  &lt;A extends DatabaseClientState, B extends DatabaseClientState&gt;(fa: DatabaseClient&lt;A&gt;): DatabaseClient&lt;B&gt; =&gt; 
+    fa as unknown as DatabaseClient&lt;B&gt;;
+</code></pre>
+<p>With this function, the implementation is pretty simple.</p>
+<pre><code class="language-typescript">const openConnection = async (db: DatabaseClient&lt;Closed&gt;): Promise&lt;DatabaseClient&lt;Opened&gt;&gt; =&gt; {
+  await db.client.connect();
+  return unsafeConvert(db);
+}
+</code></pre>
+<h2><code>beginTransaction</code>, <code>commitTransaction</code>, <code>rollbackTransaction</code></h2>
+<p>Let's create <code>begin</code>, <code>commit</code> and <code>rollback</code> for handling transactions.</p>
+<pre><code class="language-typescript">const beginTransaction = async (db: DatabaseClient&lt;Opened&gt;): Promise&lt;DatabaseClient&lt;InTransaction&gt;&gt; =&gt; {
+  await db.client.query(&#x27;BEGIN&#x27;);
+  return unsafeConvert(db);
+}
+
+const commitTransaction = async (db: DatabaseClient&lt;InTransaction&gt;): Promise&lt;DatabaseClient&lt;Opened&gt;&gt; =&gt; {
+  await db.client.query(&#x27;COMMIT&#x27;);
+  return unsafeConvert(db);
+}
+
+const rollbackTransaction = async (db: DatabaseClient&lt;InTransaction&gt;): Promise&lt;DatabaseClient&lt;Opened&gt;&gt; =&gt; {
+  await db.client.query(&#x27;ROLLBACK&#x27;);
+  return unsafeConvert(db);
+}
+</code></pre>
+<h2><code>query</code></h2>
+<p>Function <code>query</code> is more interesting because we want it to work with <code>Opened</code> client but also with client <code>InTransaction</code>. We can deal with that using a type parameter with upper bound <code>InTransaction | Opened</code>. Also, notice the return type is tuple <code>[Result, DatabaseClient&lt;T&gt;]</code> because we need to keep track of database client and propagate the result of the query at the same time.</p>
+<pre><code class="language-typescript">const query = async &lt;T extends InTransaction | Opened&gt;(sql: string, db: DatabaseClient&lt;T&gt;): Promise&lt;[Result, DatabaseClient&lt;T&gt;]&gt; =&gt; {
+  const result = await db.client.query(sql);
+  return [result, unsafeConvert(db)];
+}
+
+</code></pre>
+<p>Now, there is a problem that we can actually do <code>await query&lt;Opened&gt;(&#x27;BEGIN&#x27;, client)</code>. We could probably deal with that by creating a custom type for the sql query string and restricting its creation in a way that these queries are impossible. I will not deal with this problem in here.</p>
+<h2>Implications</h2>
+<p>With functions constructed above we made a set of non-sensical programs working with DB not compilable! For example, it shouldn't be possible to trigger rollback if we didn't begin a transaction.</p>
+<pre><code class="language-typescript">const exampleProgram = async (db: DatabaseClient&lt;Closed&gt;) =&gt; {
+  const openedDb = await openConnection(db);
+  rollbackTransaction(openedDb);
+};
+</code></pre>
+<p>The type checker will raise the following error.</p>
+<pre><code>Argument of type &#x27;DatabaseClient&lt;Opened&gt;&#x27; is not assignable to parameter of type &#x27;DatabaseClient&lt;InTransaction&gt;&#x27;.
+  Type &#x27;Opened&#x27; is not assignable to type &#x27;InTransaction&#x27;.
+    Types of property &#x27;ConnectionNotOpened&#x27; are incompatible.
+      Type &#x27;typeof ConnectionNotOpened&#x27; is not assignable to type &#x27;typeof ConnectionNotOpened&#x27;. Two different types with this name exist, but they are unrelated.
+</code></pre>
+<p>Also, say good bye to accidental SQL queries on a closed connection!</p>
+<pre><code class="language-typescript">const exampleProgram2 = async (db: DatabaseClient&lt;Closed&gt;) =&gt; {
+  const result = await query(&#x27;SELECT * FROM test;&#x27;, db);
+};
+</code></pre>
+<p>Because the compiler will catch these errors for you.</p>
+<pre><code>Argument of type &#x27;DatabaseClient&lt;Closed&gt;&#x27; is not assignable to parameter of type &#x27;DatabaseClient&lt;Opened | InTransaction&gt;&#x27;.
+  Type &#x27;Closed&#x27; is not assignable to type &#x27;Opened | InTransaction&#x27;.
+    Type &#x27;Closed&#x27; is not assignable to type &#x27;InTransaction&#x27;.
+      Types of property &#x27;ConnectionNotOpened&#x27; are incompatible.
+        Type &#x27;typeof ConnectionNotOpened&#x27; is not assignable to type &#x27;typeof ConnectionNotOpened&#x27;. Two different types with this name exist, but they are unrelated.
+</code></pre>
+<div id="disqus_thread"></div>
+<script>
+    /**
+    *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+    *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables    */
+    /*
+    var disqus_config = function () {
+    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+    */
+    (function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = 'https://sukovanej-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+    </div>
+    <footer>
+      This website was generated from <a href="https://obsidian.md/">obsidian</a> by a custom generator.
+    </footer>
+  </body>
+</html>
