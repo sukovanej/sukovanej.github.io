@@ -5,6 +5,7 @@ enable_comments: False
 ---
 ## Posts
 
+- [2022-08-17 - Testing applications with database](blog/posts/2022/08-august/2022-08-17)
 - [2022-08-16 - Phantom types in Typescript](blog/posts/2022/08-august/2022-08-16)
 - [2022-08-14 - Haskell `conduit` example app](blog/posts/2022/08-august/2022-08-14)
 - [2022-08-13 - Chuck Norris jokes Haskell CLI app with `cabal`](blog/posts/2022/08-august/2022-08-13)
