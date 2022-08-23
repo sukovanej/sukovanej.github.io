@@ -38,7 +38,7 @@
 <li>we put a pure value into a coroutine and then chain a function <code>h</code> on it, or</li>
 <li>we invoke <code>h</code> with <code>a</code> directly.</li>
 </ul>
-<h3>Left identity</h3>
+<h3>Right identity</h3>
 <pre><code class="language-haskell">m &gt;&gt;= return       ===     m
 </code></pre>
 <p>This one is even easier. It says that chaining a function that puts its input into the context doesn't have any effect on it. It is somewhat a boosted version of applying an identity function.</p>
